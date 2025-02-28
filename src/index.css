@@ -1,0 +1,289 @@
+/* General Styles */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+}
+/* HOMEPAGE */
+
+.homepage-container {
+  text-align: center;
+  margin-top: 50px;
+}
+
+h1 {
+  font-size: 36px;
+  margin-bottom: 20px;
+}
+
+p {
+  font-size: 18px;
+  margin-bottom: 40px;
+}
+
+.auth-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+}
+
+.signin-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+button:hover {
+  opacity: 0.8;
+}
+
+.homepage-image {
+  max-width: 50%;
+  height: auto;
+  margin-top: 20px;
+  margin-bottom: 40px;
+}
+
+/*---Signin---*/
+/* Background covering entire page */
+.signin-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("output_1.png"); /* Ensure correct image path */
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Main container (two large sections) */
+.signin-container {
+  display: flex;
+  width: 40vw; /* 80% of viewport width */
+  height: 60vh; /* 60% of viewport height */
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  justify-content: space-between;
+  gap: 10px; /* Adds space between left and right sections */
+  margin: 80px;
+}
+
+/* Left side - Typewriter text */
+.signin-left {
+  flex: 1;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px; /* Ensures text isn't too close to edges */
+  margin: 30px;
+}
+
+.typewriter-text {
+  color: white;
+  font-size: 60px;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Right side - Sign-in Form */
+.signin-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 30px;
+  padding: 30px; /* Add padding for extra space inside the right container */
+}
+
+.signin-right h2 {
+  font-size: 35px;
+}
+
+/* Form container (Make it larger) */
+.signin-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%; /* Use 100% width of the container */
+  max-width: 600px; /* Increase the maximum width */
+  margin-top: 30px; /* Add margin to create space between the typewriter and form */
+  padding: 20px;
+  border-radius: 10px; /* Optional, adds rounded corners to the form */
+}
+
+
+/* Input fields size */
+.signin-form input {
+  padding: 16px; /* Increase padding to make inputs larger */
+  font-size: 18px; /* Increase font size for input text */
+  margin-bottom: 20px; /* More space between inputs */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  width: 100%;
+  box-sizing: border-box; /* Ensure padding is included in width */
+}
+
+
+/* Error message styling */
+.error-message {
+  color: red;
+  font-size: 16px; /* Increase error message font size */
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+
+/* Button styling */
+.signin-btn {
+  padding: 16px;
+  font-size: 18px; /* Increase font size of the button */
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+.signin-btn:hover {
+  background-color: #0056b3;
+}
+
+/* DASHBOARD */
+
+/* Dashboard Layout */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.dashboard-content {
+  display: flex;
+  flex: 1;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  padding: 15px 20px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-bar {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 200px;
+  background: #333;
+  color: white;
+  padding: 20px;
+  height: 100vh;
+}
+
+.sidebar h3 {
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  padding: 10px;
+  border-bottom: 1px solid #555;
+  cursor: pointer;
+}
+
+.sidebar ul li:hover {
+  background: #444;
+}
+
+/* Main Content */
+.dashboard-main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+}
+
+/* Cards */
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+
+/*POPULOUS ANIMALS*/
+.populous-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.populous-card {
+  flex: 1;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.animal {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.animal-img {
+  width: 60px;
+  height: 40px;
+  border-radius: 20%;
+  object-fit: cover;
+}
+
+.animal-info {
+  flex: 1;
+}
+
+.percentage {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
