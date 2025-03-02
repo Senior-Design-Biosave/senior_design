@@ -198,11 +198,11 @@ button:hover {
 
 /* Sidebar */
 .sidebar {
-  width: 200px;
+  width: 150px;
   background: #333;
   color: white;
   padding: 20px;
-  height: 100vh;
+  height: 290vh;
 }
 
 .sidebar h3 {

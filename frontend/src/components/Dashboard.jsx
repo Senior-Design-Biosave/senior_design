@@ -3,7 +3,8 @@ import Header from "./Header";
 import Sidebar from "./Sidebar";
 import PopulousAnimals from "./PopulousAnimals";
 import RelativeAbundance from "./RelativeAbundance";
-import Heatmap from "./Heatmap";
+import Pointmap from "./Heatmap";
+import Heatmap from "./Heatmap2";
 
 const Dashboard = () => {
   return (
@@ -13,6 +14,7 @@ const Dashboard = () => {
         <Sidebar />
         <main className="dashboard-main">
           <RelativeAbundance />
+          <Pointmap/>
           <Heatmap/>
           <PopulousAnimals title="Populous Animals"/>
         </main>
