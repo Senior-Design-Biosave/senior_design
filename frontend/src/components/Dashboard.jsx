@@ -2,8 +2,8 @@ import React from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import PopulousAnimals from "./PopulousAnimals";
-import RelativeAbundance from "./RelativeAbundance";
-import Pointmap from "./Heatmap";
+import Bargraph from "./Bargraph";
+//import Pointmap from "./Heatmap";
 import Heatmap from "./Heatmap2";
 
 const Dashboard = () => {
@@ -13,10 +13,9 @@ const Dashboard = () => {
       <div className="dashboard-content">
         <Sidebar />
         <main className="dashboard-main">
-          <RelativeAbundance />
-          <Pointmap/>
+          <Bargraph />
           <Heatmap/>
-          <PopulousAnimals title="Populous Animals"/>
+          <PopulousAnimals/>
         </main>
       </div>
     </div>

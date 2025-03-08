@@ -145,8 +145,10 @@ const Heatmap = () => {
     });
 
     // Set up the tile layer (you can change this to your preferred map style)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
+    L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+      attribution: "Google Satellite",
+    }).addTo(map);      
+    
     // Create heat layers for Alpha and Beta data
     const alphaHeatLayer = L.heatLayer(alphaHeatData, {
       radius: 25,
@@ -171,10 +173,19 @@ const Heatmap = () => {
   }, []);
 
   return (
-    <div style={{ position: "relative", height: "100vh" }}>
-      <div id="heatmap" style={{ height: "100%" }}></div>
+    <div style={{ position: "relative", height: "100vh", marginBottom: "20px" }}>
+      <div
+        id="heatmap"
+        style={{
+          height: "100%",
+          borderRadius: "10px",  // Apply border-radius to the map container
+          overflow: "hidden",    // Hide anything that overflows the border radius
+          boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)", // Adds a subtle shadow below the map
+        }}
+      ></div>
     </div>
   );
+  
 };
 
 export default Heatmap;
