@@ -9,8 +9,8 @@ app.use(cors()); // Enable CORS to allow React to fetch data
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "root",
-  database: "SeniorDesign",
+  password: "NutellaBiscuit5!",
+  database: "senior_design",
 });
 
 db.connect((err) => {
@@ -23,13 +23,47 @@ db.connect((err) => {
 
 // API Route to get heatmap data
 app.get("/api/heatmap", (req, res) => {
-  const sql = "SELECT latitude, longitude, alpha, beta FROM location_based";
+  const sql = "SELECT latitude, longitude, alpha, beta FROM latlong_data";
   db.query(sql, (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: "Database query failed" });
     }
     res.json(results);
+  });
+});
+
+// API endpoint to get species abundance per country for pie chart
+app.get("/api/piechart", (req, res) => {
+  const query = `
+      SELECT c.name AS country, s.species_name, s.total_abundance 
+      FROM species_abundance s
+      JOIN countries c ON s.country_id = c.id
+  `;
+
+  db.query(query, (err, results) => {
+      if (err) {
+          console.error(err);
+          res.status(500).send("Error fetching data");
+      } else {
+          res.json(results);
+      }
+  });
+});
+
+// API endpoint to get alpha per species per country for bar graph
+app.get("/api/bargraph", (req, res) => {
+  db.query(`
+    SELECT c.id AS country_id, c.name AS country_name, s.species_name, s.alpha
+    FROM species_abundance s
+    JOIN countries c ON s.country_id = c.id
+  `, (err, results) => {
+    if (err) {
+      console.error("Error fetching species abundance:", err);
+      res.status(500).json({ error: "Database error" });
+    } else {
+      res.json(results);
+    }
   });
 });
 

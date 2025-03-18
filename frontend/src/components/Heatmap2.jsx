@@ -32,13 +32,13 @@ const Heatmap = () => {
     });
 
     //WHITE MAP TO SEE THE DOTS
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> contributors',
-    }).addTo(map);
+    // L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
+    //   attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> contributors',
+    // }).addTo(map);
     
-    /*L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+    L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
       attribution: "Google Satellite",
-    }).addTo(map);*/
+    }).addTo(map);
 
     // Add heatmap layer
     L.heatLayer(heatmapData, {
@@ -51,7 +51,7 @@ const Heatmap = () => {
   }, [heatmapData]);
 
   return (
-    <div style={{ position: "relative", height: "100vh" }}>
+    <div style={{ position: "relative", height: "100vh", marginBottom: "20px"}}>
       <div
         id="heatmap"
         style={{

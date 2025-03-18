@@ -1,4 +1,5 @@
 'use strict';
+import L from 'leaflet';
 
 L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
 
