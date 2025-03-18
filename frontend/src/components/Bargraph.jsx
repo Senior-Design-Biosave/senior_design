@@ -7,7 +7,6 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  ResponsiveContainer,
 } from "recharts";
 
 function RelativeAbundance() {
@@ -22,7 +21,6 @@ function RelativeAbundance() {
         const groupedData = {};
         const countryMap = {};
 
-        // Group data by country_id and map country_id to country_name
         response.data.forEach((item) => {
           const { country_id, country_name, species_name, alpha } = item;
 
@@ -31,22 +29,22 @@ function RelativeAbundance() {
           }
           groupedData[country_id].push({ species: species_name, alpha: Number(alpha) });
 
-          // Map country_id to country_name
           countryMap[country_id] = country_name;
         });
 
         setData(groupedData);
         setCountryNames(countryMap);
-        setSelectedCountry(Object.keys(groupedData)[0] || null); // Default to the first country
+        setSelectedCountry(Object.keys(groupedData)[0] || null);
       })
       .catch((error) => console.error("Error fetching data:", error));
   }, []);
 
+  const chartWidth = data[selectedCountry] ? Math.max(600, data[selectedCountry].length * 50) : 600;
+
   return (
-    <div className="card">
+    <div className="card" style={{ width: "100%", overflowX: "auto" }}>
       <h3>Alpha Diversity</h3>
 
-      {/* Country Selector */}
       <div style={{ marginBottom: "10px" }}>
         <label>Select Country: </label>
         <select
@@ -61,26 +59,29 @@ function RelativeAbundance() {
         </select>
       </div>
 
-      {/* Bar Chart */}
       {selectedCountry && data[selectedCountry] ? (
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart
-            data={data[selectedCountry]}
-            margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="species"
-              angle={-45}
-              textAnchor="end"
-              interval={0}
-              height={70}
-            />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="alpha" fill="#2ecc71" /> {/* Greenish color */}
-          </BarChart>
-        </ResponsiveContainer>
+        <div style={{ width: "100%", overflowX: "auto" }}>
+          <div style={{ width: chartWidth }}>
+            <BarChart
+              width={chartWidth}
+              height={400}
+              data={data[selectedCountry]}
+              margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="species"
+                angle={-45}
+                textAnchor="end"
+                interval={0}
+                height={70}
+              />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="alpha" fill="#255F38" />
+            </BarChart>
+          </div>
+        </div>
       ) : (
         <p>Loading data...</p>
       )}
