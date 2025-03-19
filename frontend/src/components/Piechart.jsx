@@ -39,12 +39,13 @@ const PieChartComponent = () => {
     }));
 
     return (
-        <div style={{ textAlign: "center" }}>
-            <h2>Species Abundance Per Country</h2>
+        <div className="card" style={{  width: "97%", overflowX: "auto", textAlign: "left" }}>
+            <h3>Species Abundance</h3>
+            <label>Select country: </label>
             <select
                 value={selectedCountry}
                 onChange={handleCountryChange}
-                style={{padding: "10px" }}
+                style={{padding: "2px" }}
             >
                 {Object.keys(data).map((country, index) => (
                     <option key={index} value={country}>

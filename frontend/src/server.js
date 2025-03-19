@@ -9,8 +9,8 @@ app.use(cors()); // Enable CORS to allow React to fetch data
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "NutellaBiscuit5!",
-  database: "senior_design",
+  password: "root",
+  database: "SeniorDesign",
 });
 
 db.connect((err) => {

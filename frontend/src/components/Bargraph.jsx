@@ -42,14 +42,15 @@ function RelativeAbundance() {
   const chartWidth = data[selectedCountry] ? Math.max(600, data[selectedCountry].length * 50) : 600;
 
   return (
-    <div className="card" style={{ width: "100%", overflowX: "auto" }}>
+    <div className="card" style={{ width: "97%", overflowX: "auto" }}>
       <h3>Alpha Diversity</h3>
 
       <div style={{ marginBottom: "10px" }}>
-        <label>Select Country: </label>
+        <label>Select country: </label>
         <select
           value={selectedCountry || ""}
           onChange={(e) => setSelectedCountry(e.target.value)}
+          style={{padding: "2px" }}
         >
           {Object.keys(data).map((countryId) => (
             <option key={countryId} value={countryId}>
