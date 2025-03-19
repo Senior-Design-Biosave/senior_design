@@ -1,26 +1,20 @@
 import React from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 
-function Sidebar() {
-  const navigate = useNavigate(); // Initialize navigate function
+function Sidebar({ setActiveTab }) {
+  const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Clear user session if needed (e.g., remove token from localStorage)
-    //localStorage.removeItem("authToken"); // Adjust based on your auth setup
-
-    // Redirect to homepage
     navigate("/");
   };
-
-  const menuItems = ["Dashboard", "Reports", "Settings"];
 
   return (
     <aside className="sidebar">
       <h3>BIOSAVE</h3>
       <ul>
-        {menuItems.map((item, index) => (
-          <li key={index}>{item}</li>
-        ))}
+        <li onClick={() => setActiveTab("dashboard")}>Dashboard</li>
+        <li onClick={() => setActiveTab("reports")}>Reports</li>
+        <li>Settings</li>
         <li onClick={handleLogout} className="logout-btn">Logout</li>
       </ul>
     </aside>
@@ -28,4 +22,3 @@ function Sidebar() {
 }
 
 export default Sidebar;
-

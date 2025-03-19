@@ -1,23 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import PopulousAnimals from "./PopulousAnimals";
 import Bargraph from "./Bargraph";
 import Piechart from "./Piechart";
-//import Pointmap from "./Heatmap";
 import Heatmap from "./Heatmap2";
 
 const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState("dashboard"); // Track selected tab
+
   return (
     <div className="dashboard-container">
       <Header />
       <div className="dashboard-content">
-        <Sidebar />
+        {/* Pass setActiveTab to Sidebar */}
+        <Sidebar setActiveTab={setActiveTab} />
+        
         <main className="dashboard-main">
-          <Bargraph />
-          <Piechart/>
-          <Heatmap/>
-          <PopulousAnimals/>
+          {/* Show only when "Dashboard" is selected */}
+          {activeTab === "dashboard" && (
+            <>
+              <Heatmap />
+              <PopulousAnimals />
+            </>
+          )}
+
+          {/* Show only when "Reports" is selected */}
+          {activeTab === "reports" && (
+            <>
+              <Bargraph />
+              <Piechart />
+            </>
+          )}
         </main>
       </div>
     </div>
