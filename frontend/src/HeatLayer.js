@@ -134,71 +134,33 @@ L.HeatLayer = (L.Layer ? L.Layer : L.Class).extend({
         if (!this._map) {
             return;
         }
-        var data = [],
-            r = this._heat._r,
-            size = this._map.getSize(),
-            bounds = new L.Bounds(
-                L.point([-r, -r]),
-                size.add([r, r])),
-
-            max = this.options.max === undefined ? 1 : this.options.max,
-            maxZoom = this.options.maxZoom === undefined ? this._map.getMaxZoom() : this.options.maxZoom,
-            v = 1 / Math.pow(2, Math.max(0, Math.min(maxZoom - this._map.getZoom(), 12))),
-            cellSize = r / 2,
-            grid = [],
-            panePos = this._map._getMapPanePos(),
-            offsetX = panePos.x % cellSize,
-            offsetY = panePos.y % cellSize,
-            i, len, p, cell, x, y, j, len2, k;
-
-        // console.time('process');
-        for (i = 0, len = this._latlngs.length; i < len; i++) {
-            p = this._map.latLngToContainerPoint(this._latlngs[i]);
+    
+        const data = [];
+        const r = this._heat._r;
+        const size = this._map.getSize();
+        const bounds = new L.Bounds(
+            L.point([-r, -r]),
+            size.add([r, r])
+        );
+    
+        const max = this.options.max ?? 1;
+        
+        // MODIFIED: Process each point individually without aggregation
+        for (let i = 0, len = this._latlngs.length; i < len; i++) {
+            const p = this._map.latLngToContainerPoint(this._latlngs[i]);
             if (bounds.contains(p)) {
-                x = Math.floor((p.x - offsetX) / cellSize) + 2;
-                y = Math.floor((p.y - offsetY) / cellSize) + 2;
-
-                var alt =
-                    this._latlngs[i].alt !== undefined ? this._latlngs[i].alt :
-                    this._latlngs[i][2] !== undefined ? +this._latlngs[i][2] : 1;
-                k = alt * v;
-
-                grid[y] = grid[y] || [];
-                cell = grid[y][x];
-
-                if (!cell) {
-                    grid[y][x] = [p.x, p.y, k];
-
-                } else {
-                    cell[0] = (cell[0] * cell[2] + p.x * k) / (cell[2] + k); // x
-                    cell[1] = (cell[1] * cell[2] + p.y * k) / (cell[2] + k); // y
-                    cell[2] += k; // cumulated intensity value
-                }
+                const alt = this._latlngs[i].alt ?? this._latlngs[i][2] ?? 1;
+                data.push([
+                    Math.round(p.x),
+                    Math.round(p.y),
+                    Math.min(alt, max) // Use the raw intensity value
+                ]);
             }
         }
-
-        for (i = 0, len = grid.length; i < len; i++) {
-            if (grid[i]) {
-                for (j = 0, len2 = grid[i].length; j < len2; j++) {
-                    cell = grid[i][j];
-                    if (cell) {
-                        data.push([
-                            Math.round(cell[0]),
-                            Math.round(cell[1]),
-                            Math.min(cell[2], max)
-                        ]);
-                    }
-                }
-            }
-        }
-        // console.timeEnd('process');
-
-        // console.time('draw ' + data.length);
+    
         this._heat.data(data).draw(this.options.minOpacity);
-        // console.timeEnd('draw ' + data.length);
-
         this._frame = null;
-    },
+    },   
 
     _animateZoom: function (e) {
         var scale = this._map.getZoomScale(e.zoom),

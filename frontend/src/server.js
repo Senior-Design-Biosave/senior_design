@@ -21,10 +21,24 @@ db.connect((err) => {
   console.log("Connected to MySQL database.");
 });
 
-// API Route to get heatmap data
+// API Route to get filtered heatmap data by month
+// For all months data
 app.get("/api/heatmap", (req, res) => {
   const sql = "SELECT latitude, longitude, alpha, beta FROM latlong_data";
   db.query(sql, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Database query failed" });
+    }
+    res.json(results);
+  });
+});
+
+// For specific month data
+app.get("/api/heatmap/:month", (req, res) => {
+  const month = req.params.month.toUpperCase();
+  const sql = "SELECT latitude, longitude, alpha, beta FROM latlong_data WHERE month = ?";
+  db.query(sql, [month], (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ error: "Database query failed" });
