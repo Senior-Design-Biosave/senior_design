@@ -9,8 +9,8 @@ app.use(cors()); // Enable CORS to allow React to fetch data
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "root",
-  database: "SeniorDesign",
+  password: "NutellaBiscuit5!",
+  database: "senior_design",
 });
 
 db.connect((err) => {
@@ -46,6 +46,51 @@ app.get("/api/heatmap/:month", (req, res) => {
     res.json(results);
   });
 });
+
+// for clicking map point to display species
+app.get("/api/species", (req, res) => {
+  const { lat, lng, month } = req.query;
+  const latitude = parseFloat(lat);
+  const longitude = parseFloat(lng);
+  const monthStr = month.toUpperCase();
+
+  const latMin = latitude - 0.0005;
+  const latMax = latitude + 0.0005;
+  const lonMin = longitude - 0.0005;
+  const lonMax = longitude + 0.0005;
+
+  const latlongSql = `
+    SELECT id FROM latlong_data
+    WHERE latitude BETWEEN ? AND ?
+    AND longitude BETWEEN ? AND ?
+    AND month = ?
+    LIMIT 1
+  `;
+
+  db.query(latlongSql, [latMin, latMax, lonMin, lonMax, monthStr], (err, result) => {
+    if (err || result.length === 0) {
+      return res.json([]);
+    }
+
+    const latlongId = result[0].id;
+
+    const speciesSql = `
+      SELECT species_name, abundance
+      FROM species_location
+      WHERE latlong_id = ?
+    `;
+
+    db.query(speciesSql, [latlongId], (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Failed to fetch species data" });
+      }
+
+      res.json(results);
+    });
+  });
+});
+
 
 // API endpoint to get species abundance per country for pie chart
 app.get("/api/piechart", (req, res) => {

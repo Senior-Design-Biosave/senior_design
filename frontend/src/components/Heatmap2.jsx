@@ -68,6 +68,44 @@ import "../leaflet-heat.js";
         L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
           attribution: "Google Satellite",
         }).addTo(map);
+
+        map.on('click', async function (e) {
+          const clickedLat = e.latlng.lat.toFixed(6);
+          const clickedLng = e.latlng.lng.toFixed(6);
+        
+          try {
+            const response = await fetch(`http://localhost:5000/api/species?lat=${clickedLat}&lng=${clickedLng}&month=${selectedMonth}`);
+            const speciesData = await response.json();
+        
+            if (speciesData.length > 0) {
+              const popupContent = speciesData
+              .map(s => `
+                <a href="https://www.google.com/search?q=${encodeURIComponent(`${s.species_name} genus`)}" 
+                  target="_blank" 
+                  style="color:#0077cc; text-decoration:none;">
+                  <strong>${s.species_name}</strong>
+                </a>: ${s.abundance}
+              `)
+              .join("<br>");
+        
+              L.popup()
+                .setLatLng([clickedLat, clickedLng])
+                .setContent(`<div style="font-size: 14px;">${popupContent}</div>`)
+                .openOn(map);
+            } else {
+              L.popup()
+                .setLatLng([clickedLat, clickedLng])
+                .setContent(`<div style="font-size: 14px; color: gray;">No species data found here.</div>`)
+                .openOn(map);
+            }
+          } catch (err) {
+            console.error(err);
+            L.popup()
+              .setLatLng([clickedLat, clickedLng])
+              .setContent(`<div style="color: red;">Error fetching data</div>`)
+              .openOn(map);
+          }
+        });          
     
         L.heatLayer(heatmapData, {
           radius: 15,
