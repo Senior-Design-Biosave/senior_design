@@ -46,13 +46,18 @@ import "../leaflet-heat.js";
             const min = Math.min(...validValues);
             const max = Math.max(...validValues);
       
+            //-------------------
             const formattedData = data
             .filter(item => item[valueType] !== null)  // Only include rows with non-null beta/alpha
             .map(item => {
               const val = item[valueType];
-              const norm = (val - min) / (max - min);
+              let norm = 0;
+              if (max !== min) {
+                norm = (val - min) / (max - min);
+              }
               return [item.latitude, item.longitude, norm];
-            });
+            });          
+            //--------------------
       
             setHeatmapData(formattedData);
             setIsLoading(false);
@@ -133,15 +138,16 @@ import "../leaflet-heat.js";
         });          
     
         L.heatLayer(heatmapData, {
-          radius: 15,
-          blur: 5,
+          radius: 8,
+          blur: 10,
+          maxZoom: 12,
+          minOpacity: 0.5,
           max: 1.0,
-          minOpacity: 0.3,
           gradient: {
-            0.1: 'blue',
-            0.3: 'cyan',
+            0.0: 'blue',
+            0.25: 'cyan',
             0.5: 'lime',
-            0.7: 'yellow',
+            0.75: 'yellow',
             1.0: 'red'
           }
         }).addTo(map);

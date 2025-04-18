@@ -5,6 +5,7 @@ import PopulousAnimals from "./PopulousAnimals";
 import Bargraph from "./Bargraph";
 import Piechart from "./Piechart";
 import Heatmap from "./Heatmap2";
+import Settings from "./Settings"
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard"); // Track selected tab
@@ -31,6 +32,13 @@ const Dashboard = () => {
             <>
               <Bargraph />
               <Piechart />
+            </>
+          )}
+
+          {/* Show only when "Settings" is selected */}
+          {activeTab === "settings" && (
+            <>
+              <Settings />
             </>
           )}
         </main>

@@ -14,7 +14,7 @@ function Sidebar({ setActiveTab }) {
       <ul>
         <li onClick={() => setActiveTab("dashboard")}>Dashboard</li>
         <li onClick={() => setActiveTab("reports")}>Reports</li>
-        <li>Settings</li>
+        <li onClick={() => setActiveTab("settings")}>Settings</li>
         <li onClick={handleLogout} className="logout-btn">Logout</li>
       </ul>
     </aside>

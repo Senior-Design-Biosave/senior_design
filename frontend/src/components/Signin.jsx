@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Typical from "react-typical";
 import axios from "axios";
+import { useAuth } from "../AuthContext"; 
 
 const Signin = () => {
   const [email, setEmail] = useState("");
@@ -10,6 +11,7 @@ const Signin = () => {
   const navigate = useNavigate();
   const [typingDone, setTypingDone] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth(); //to get the login function from auth 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,9 +32,10 @@ const Signin = () => {
       console.log("Server response:", response.data); // Debug log
       
       if (response.data.message === "Login successful") {
+        login (response.data.user);
         localStorage.setItem("user", JSON.stringify(response.data.user));
         navigate("/dashboard"); //all users will naviagate to common dashboard
-                
+
         /*if (response.data.user.role === "admin") {
           navigate("/dashboard"); //for dmin navigation
         } else {
