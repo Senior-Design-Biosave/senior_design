@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Typical from "react-typical";
+import axios from "axios";
 
 const Signin = () => {
   const [email, setEmail] = useState("");
@@ -8,14 +9,50 @@ const Signin = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [typingDone, setTypingDone] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (email === "test@example.com" && password === "password") {
-      navigate("/dashboard");
-    } else {
-      setError("Invalid email or password");
+    setIsLoading(true);
+    setError("");
+  
+    try {
+      console.log("Attempting login with:", email); // Debug log
+      const response = await axios.post("http://localhost:5000/api/signin", {
+        email,
+        password
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      console.log("Server response:", response.data); // Debug log
+      
+      if (response.data.message === "Login successful") {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        navigate("/dashboard"); //all users will naviagate to common dashboard
+                
+        /*if (response.data.user.role === "admin") {
+          navigate("/dashboard"); //for dmin navigation
+        } else {
+          navigate("/dashboard"); //for ecologist navigation
+        }*/
+      }
+    } catch (err) {
+      console.error("Login error:", err); // Debug log
+      if (err.response) {
+        setError(err.response.data.error || "Login failed");
+        console.log("Server error response:", err.response.data); // Debug log
+      } else if (err.request) {
+        setError("No response from server");
+        console.log("No response received"); // Debug log
+      } else {
+        setError("Error setting up request");
+        console.log("Request setup error:", err.message); // Debug log
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,7 +93,7 @@ const Signin = () => {
               required
             />
             {error && <p className="error-message">{error}</p>}
-            <button type="submit" className="signin-btn">Submit</button>
+            <button type="submit" className="signin-btn" disabled={isLoading}>{isLoading ? "Signing in..." : "Submit"}</button>
           </form>
         </div>
       </div>

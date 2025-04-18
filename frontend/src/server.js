@@ -1,16 +1,18 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
 const mysql = require("mysql2");
 const cors = require("cors");
 
 const app = express();
+app.use(express.json()); // Parse JSON bodies
 app.use(cors()); // Enable CORS to allow React to fetch data
 
 // MySQL Connection
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "NutellaBiscuit5!",
-  database: "senior_design",
+  password: "root",
+  database: "SeniorDesign",
 });
 
 db.connect((err) => {
@@ -19,6 +21,49 @@ db.connect((err) => {
     return;
   }
   console.log("Connected to MySQL database.");
+});
+
+//API for signin page
+app.post("/api/signin", (req, res) => {
+  const { email, password } = req.body;
+  console.log("Login attempt for:", email); // Debug log
+
+  const sql = "SELECT * FROM users WHERE email = ?";
+  db.query(sql, [email], async (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    
+    if (results.length === 0) {
+      console.log("User not found:", email);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = results[0];
+    console.log("Found user:", user.email); // Debug log
+    
+    try {
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+      console.log("Password match:", isMatch); // Debug log
+      
+      if (!isMatch) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      res.json({
+        message: "Login successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role
+        },
+      });
+    } catch (bcryptErr) {
+      console.error("Bcrypt error:", bcryptErr);
+      res.status(500).json({ error: "Authentication error" });
+    }
+  });
 });
 
 // API Route to get filtered heatmap data by month
@@ -90,7 +135,6 @@ app.get("/api/species", (req, res) => {
     });
   });
 });
-
 
 // API endpoint to get species abundance per country for pie chart
 app.get("/api/piechart", (req, res) => {

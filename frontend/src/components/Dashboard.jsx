@@ -20,7 +20,7 @@ const Dashboard = () => {
           {/* Show only when "Dashboard" is selected */}
           {activeTab === "dashboard" && (
             <>
-              <h3>Species Richness</h3>
+              <h3>Diversity Metrics</h3>
               <Heatmap />
               <PopulousAnimals />
             </>

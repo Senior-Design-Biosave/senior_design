@@ -6,9 +6,6 @@ function Header() {
       <div className="header-left">
         <h2>Biodiversity Dashboard</h2>
       </div>
-      <div className="header-right">
-        <input type="text" placeholder="Search..." className="search-bar" />
-      </div>
     </header>
   );
 }

@@ -1,8 +1,3 @@
-    //WHITE MAP TO SEE THE DOTS
-    // L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {
-    //   attribution: '&copy; <a href="https://carto.com/attributions">CartoDB</a> contributors',
-    // }).addTo(map);
-
 import React, { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -11,6 +6,7 @@ import "../leaflet-heat.js";
     const Heatmap = () => {
       const [heatmapData, setHeatmapData] = useState([]);
       const [selectedMonth, setSelectedMonth] = useState("ALL");
+      const [valueType, setValueType] = useState("alpha");
       const [isLoading, setIsLoading] = useState(false);
     
       const months = [
@@ -20,7 +16,7 @@ import "../leaflet-heat.js";
     
       useEffect(() => {
         fetchHeatmapData(selectedMonth);
-      }, [selectedMonth]);
+      }, [selectedMonth, valueType]);
     
       const fetchHeatmapData = async(month) => {
         setIsLoading(true);
@@ -32,21 +28,32 @@ import "../leaflet-heat.js";
           .then((response) => response.json())
           .then((data) => {
             if (data.length === 0) {
+              alert(`No data available for ${valueType.toUpperCase()} in ${month}`);
               setHeatmapData([]);
               setIsLoading(false);
               return;
             }
     
-            const alphas = data.map(item => item.alpha);
-            const minAlpha = Math.min(...alphas);
-            const maxAlpha = Math.max(...alphas);
-            
-            const formattedData = data.map(({ latitude, longitude, alpha }) => [
-              latitude,
-              longitude,
-              (alpha - minAlpha) / (maxAlpha - minAlpha)
-            ]);
-            
+            const values = data.map(item => item[valueType]);
+            const validValues = values.filter(v => v!== null && !isNaN(v))
+            if (validValues.length === 0) {
+              alert(`No valid ${valueType.toUpperCase()} data found.`);
+              setHeatmapData([]);
+              setIsLoading(false);
+              return;
+            }
+      
+            const min = Math.min(...validValues);
+            const max = Math.max(...validValues);
+      
+            const formattedData = data
+            .filter(item => item[valueType] !== null)  // Only include rows with non-null beta/alpha
+            .map(item => {
+              const val = item[valueType];
+              const norm = (val - min) / (max - min);
+              return [item.latitude, item.longitude, norm];
+            });
+      
             setHeatmapData(formattedData);
             setIsLoading(false);
           })
@@ -64,10 +71,28 @@ import "../leaflet-heat.js";
           zoom: 5,
           zoomControl: false,
         });
-    
-        L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+        
+        // Google Satellite
+        const satellite = L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
           attribution: "Google Satellite",
-        }).addTo(map);
+        });
+        
+        // Google Terrain
+        const terrain = L.tileLayer("https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", {
+          attribution: "Google Terrain",
+        });
+        
+        // Add one as default
+        satellite.addTo(map);
+        
+        // Base map selector
+        const baseMaps = {
+          "Terrain": terrain,
+          "Satellite": satellite,
+        };
+        
+        // Add layer control (top-right corner)
+        L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);        
 
         map.on('click', async function (e) {
           const clickedLat = e.latlng.lat.toFixed(6);
@@ -126,6 +151,22 @@ import "../leaflet-heat.js";
     
       return (
         <div style={{ position: "relative", height: "100vh", marginBottom: "20px"}}>
+          <div style={{ position: "absolute", top: "10px", left: "135px", zIndex: 1000 }}>
+            <select 
+              value={valueType}
+              onChange={(e) => setValueType(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "4px",
+                border: "1px solid #ccc",
+                backgroundColor: "white",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+              }}
+            >
+              <option value="alpha">Alpha Diversity</option>
+              <option value="beta">Beta Diversity</option>
+            </select>
+          </div>
           <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1000 }}>
             <select 
               value={selectedMonth}
@@ -165,7 +206,7 @@ import "../leaflet-heat.js";
           <div
             id="heatmap"
             style={{
-              height: "100%",
+              height: "90%",
               borderRadius: "10px",
               overflow: "hidden",
               boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
