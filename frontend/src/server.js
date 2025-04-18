@@ -170,16 +170,8 @@ app.get("/api/bargraph", (req, res) => {
   });
 });
 
-const verifyAdmin = (req, res, next) => {
-  // In a real app, you'd get this from JWT or session
-  if (req.headers['x-admin-auth'] !== 'true') {
-    return res.status(403).json({ error: "Admin access required" });
-  }
-  next();
-};
-
 // Add user endpoint
-app.post("/api/users", verifyAdmin, async (req, res) => {
+app.post("/api/users", async (req, res) => {
   const { email, password, role } = req.body;
   
   try {
@@ -194,8 +186,7 @@ app.post("/api/users", verifyAdmin, async (req, res) => {
     }
 
     // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, 10); // 10 is standard
 
     // Insert new user
     await db.promise().query(
@@ -211,7 +202,7 @@ app.post("/api/users", verifyAdmin, async (req, res) => {
 });
 
 // Get all users endpoint
-app.get("/api/users", verifyAdmin, (req, res) => {
+app.get("/api/users", (req, res) => {
   db.query("SELECT id, email, role FROM users", (err, results) => {
     if (err) {
       console.error("Error fetching users:", err);
@@ -222,7 +213,7 @@ app.get("/api/users", verifyAdmin, (req, res) => {
 });
 
 // Delete user endpoint
-app.delete("/api/users/:id", verifyAdmin, (req, res) => {
+app.delete("/api/users/:id", (req, res) => {
   const userId = req.params.id;
   
   db.query("DELETE FROM users WHERE id = ?", [userId], (err, results) => {
@@ -236,6 +227,35 @@ app.delete("/api/users/:id", verifyAdmin, (req, res) => {
     }
     
     res.json({ message: "User deleted successfully" });
+  });
+});
+
+//Change user password
+app.put("/api/users/:id/reset-password", (req, res) => {
+  const userId = req.params.id;
+  const { newPassword } = req.body;
+  if (!newPassword) {
+    return res.status(400).json({ error: "New password is required" });
+  }
+  bcrypt.hash(newPassword, 10, (err, hash) => {
+    if (err) {
+      console.error("Hashing error:", err);
+      return res.status(500).json({ error: "Error hashing password" });
+    }
+    db.query(
+      "UPDATE users SET password_hash = ? WHERE id = ?",
+      [hash, userId],
+      (err, results) => {
+        if (err) {
+          console.error("Error updating password:", err);
+          return res.status(500).json({ error: "Database error" });
+        }
+        if (results.affectedRows === 0) {
+          return res.status(404).json({ error: "User not found" });
+        }
+        res.json({ message: "Password reset successfully" });
+      }
+    );
   });
 });
 
