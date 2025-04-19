@@ -203,7 +203,7 @@ import "../leaflet-heat.js";
       }, [heatmapData]);
     
       return (
-        <div style={{ position: "relative", height: "100vh", marginBottom: "20px"}}>
+        <div style={{ position: "relative", height: "100vh", marginBottom: "-3rem"}}>
           <div style={{ position: "absolute", top: "10px", left: "135px", zIndex: 1000 }}>
             <select 
               value={valueType}

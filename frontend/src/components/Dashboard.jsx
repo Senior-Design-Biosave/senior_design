@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
-import PopulousAnimals from "./PopulousAnimals";
+//import PopulousAnimals from "./PopulousAnimals";
 import Bargraph from "./Bargraph";
 import Piechart from "./Piechart";
 import Heatmap from "./Heatmap2";
@@ -24,8 +24,8 @@ const Dashboard = () => {
             <>
               <h3>Diversity Metrics</h3>
               <Heatmap />
+              <h3>Alpha Diversity Boxplot</h3>
               <AlphaBoxPlot />
-              <PopulousAnimals />
             </>
           )}
 
