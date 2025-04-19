@@ -8,6 +8,7 @@ import "../leaflet-heat.js";
       const [selectedMonth, setSelectedMonth] = useState("ALL");
       const [valueType, setValueType] = useState("alpha");
       const [isLoading, setIsLoading] = useState(false);
+      const [radiusCircle, setRadiusCircle] = useState(null);
     
       const months = [
         "ALL", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
@@ -144,12 +145,26 @@ import "../leaflet-heat.js";
         // Add layer control (top-right corner)
         L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);  
         
-        
-
         map.on('click', async function (e) {
           const clickedLat = e.latlng.lat.toFixed(6);
           const clickedLng = e.latlng.lng.toFixed(6);
-        
+          const latlng = e.latlng;
+
+          if (radiusCircle) {
+            map.removeLayer(radiusCircle);
+          }
+
+          // Create a new circle (100km = 100,000 meters)
+          const newCircle = L.circle(latlng, {
+            radius: 50000,
+            color: 'blue',
+            fillColor: '#add8e6',
+            fillOpacity: 0.2,
+          }).addTo(map);
+
+          // Save the new circle in state
+          setRadiusCircle(newCircle);
+
           try {
             const response = await fetch(`http://localhost:5000/api/species?lat=${clickedLat}&lng=${clickedLng}&month=${selectedMonth}`);
             const speciesData = await response.json();
@@ -164,7 +179,7 @@ import "../leaflet-heat.js";
                 </a>: ${s.abundance}
               `)
               .join("<br>");
-        
+
               L.popup()
                 .setLatLng([clickedLat, clickedLng])
                 .setContent(`<div style="font-size: 14px;">${popupContent}</div>`)
