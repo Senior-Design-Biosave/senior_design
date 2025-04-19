@@ -16,6 +16,7 @@
     "leaflet.heat": "^0.2.0",
     "mysql2": "^3.13.0",
     "react": "^19.0.0",
+    "react-boxplot": "^4.0.0",
     "react-dom": "^19.0.0",
     "react-leaflet": "^5.0.0",
     "react-leaflet-heatmap-layer": "^2.0.0",

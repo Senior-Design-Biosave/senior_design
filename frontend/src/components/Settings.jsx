@@ -106,7 +106,28 @@ function Settings() {
     { name: "High Contrast", value: "high-contrast" },
     { name: "Colorblind Friendly", value: "colorblind" }
   ];
-  const countryOptions = ["Global", "United States", "Brazil", "India", "Australia"];
+
+  //Display list of countries
+  const [countryOptions, setCountryOptions] = useState([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+  const [countriesError, setCountriesError] = useState(null);
+  useEffect(() => {
+    setCountriesLoading(true);
+    axios.get("http://localhost:5000/api/country-settings")
+      .then((res) => {
+        console.log("Countries data:",res.data);
+        const countryNames = res.data.map(row => row.name);
+        setCountryOptions(countryNames);
+        setCountriesError(null);
+      })
+      .catch((err) => {
+        console.error("Failed to load countries", err);
+        setCountriesError("Failed to load countries");
+      })
+      .finally(() => {
+        setCountriesLoading(false);
+      });
+  }, []);
 
   return (
     <div className="settings-container">
@@ -130,14 +151,16 @@ function Settings() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
           gap: 1.5rem;
-          margin-bottom: 2rem;
+          margin-bottom: 0rem;
         }
         
         .settings-card {
           background: white;
           border-radius: 10px;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          padding: 1.5rem;
+          padding-top: 1.5rem;
+          padding-left: 1.5rem;
+          padding-right: 1.5rem;
           transition: transform 0.2s, box-shadow 0.2s;
         }
 
@@ -152,7 +175,7 @@ function Settings() {
         
         .card-header {
           color: #1a5f2a; /* Dark green */
-          margin-bottom: 1.25rem;
+          margin-bottom: 0.8rem;
           font-size: 1.25rem;
           font-weight: 600;
           display: flex;
@@ -160,7 +183,7 @@ function Settings() {
         }
         
         .card-header svg {
-          margin-right: 0.75rem;
+          margin-right: 0.7rem;
         }
         
         .form-group {
@@ -169,7 +192,7 @@ function Settings() {
         
         .form-group label {
           display: block;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0rem;
           font-weight: 500;
           color: #34495e;
         }
@@ -196,12 +219,23 @@ function Settings() {
           border-radius: 6px;
           background-color: white;
           font-size: 1rem;
+          appearance: menulist;
+          -webkit-appearance: menulist;
+          -moz-appearance: menulist;
+          position: relative;
+          z-index: 1;
+          margin-bottom: 1rem;
         }
-        
+
+        .select-input:focus {
+           z-index: 2; /* Bring to front when focused */
+        }
+           
         .radio-group {
           display: flex;
           flex-direction: column;
           gap: 0.75rem;
+          padding-bottom: 1rem;
         }
         
         .radio-option {
@@ -246,6 +280,8 @@ function Settings() {
         .button-secondary {
           background-color: #5a8f69; /* Greenish gray */
           color: white;
+          margin-bottom: 1.5rem;
+          margin-right: 0.75rem;
         }
         
         .button-secondary:hover {
@@ -314,7 +350,7 @@ function Settings() {
         }
         
         .file-upload input[type="file"] {
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.9rem;
         }
         
         .loading-spinner {
@@ -348,6 +384,7 @@ function Settings() {
           color: #6c757d;
           font-size: 0.875rem;
           margin-top: 0.5rem;
+          margin-bottom: 1.5rem;
         }
       `}</style>
 
@@ -363,6 +400,9 @@ function Settings() {
             </svg>
             Satellite Imagery Source
           </div>
+          <p className="text-muted">
+            Choose which satellite imagery to use for analysis
+          </p>
           <div className="form-group">
             <select className="select-input">
               {satelliteOptions.map((option) => (
@@ -371,10 +411,10 @@ function Settings() {
                 </option>
               ))}
             </select>
+            <button className="button button-secondary">
+                  Save
+            </button>
           </div>
-          <p className="text-muted">
-            Choose which satellite imagery to use for analysis
-          </p>
         </div>
 
         <div className="settings-card">
@@ -384,6 +424,9 @@ function Settings() {
             </svg>
             Color Palette
           </div>
+          <p className="text-muted">
+            Set color scheme for predicted vs actual data visualization
+          </p>
           <div className="form-group">
             <div className="radio-group">
               {colorPalettes.map((palette) => (
@@ -399,9 +442,6 @@ function Settings() {
               ))}
             </div>
           </div>
-          <p className="text-muted">
-            Set color scheme for predicted vs actual data visualization
-          </p>
         </div>
 
         <div className="settings-card">
@@ -411,18 +451,30 @@ function Settings() {
             </svg>
             Default Map View
           </div>
-          <div className="form-group">
-            <select className="select-input">
-              {countryOptions.map((country) => (
-                <option key={country} value={country}>
-                  {country}
-                </option>
-              ))}
-            </select>
-          </div>
           <p className="text-muted">
             Set the default zoom location when opening the map
           </p>
+          <div className="form-group">
+            <select className="select-input">
+              {countriesLoading ? (
+                <option>Loading countries...</option>
+              ) : countriesError ? (
+                <option>Error loading countries</option>
+              ) : (
+                <>
+                  <option value="">Select a country</option>
+                  {countryOptions.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+            <button className="button button-secondary">
+                  Save
+            </button>
+          </div>
         </div>
       </div>
 
@@ -439,6 +491,9 @@ function Settings() {
                 </svg>
                 Species Data Management
               </div>
+              <p className="text-muted">
+                Manage species database entries
+              </p>
               <div className="button-group">
                 <button className="button button-primary">
                   Add New Species
@@ -447,9 +502,6 @@ function Settings() {
                   Delete Species
                 </button>
               </div>
-              <p className="text-muted">
-                Manage species database entries
-              </p>
             </div>
 
             <div className="settings-card">
@@ -459,15 +511,15 @@ function Settings() {
                 </svg>
                 Bulk Data Import
               </div>
+              <p className="text-muted">
+                Import species data from spreadsheet (Excel/CSV)
+              </p>
               <div className="file-upload">
                 <input type="file" accept=".xlsx,.csv" />
                 <button className="button button-secondary">
                   Upload Excel File
                 </button>
               </div>
-              <p className="text-muted">
-                Import species data from spreadsheet (Excel/CSV)
-              </p>
             </div>
 
             <div className="settings-card">
@@ -477,15 +529,15 @@ function Settings() {
                 </svg>
                 Model Training
               </div>
+              <p className="text-muted">
+                Upload updated model for training
+              </p>
               <div className="file-upload">
                 <input type="file" accept=".h5,.pth,.model"/>
                 <button className="button button-secondary">
                   Upload New Model
                 </button>
               </div>
-              <p className="text-muted">
-                Upload updated model for training
-              </p>
             </div>
 
             <div className="settings-card full-width-card">

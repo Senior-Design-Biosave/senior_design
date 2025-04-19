@@ -78,7 +78,6 @@ app.get("/api/heatmap", (req, res) => {
     res.json(results);
   });
 });
-
 // For specific month data
 app.get("/api/heatmap/:month", (req, res) => {
   const month = req.params.month.toUpperCase();
@@ -91,7 +90,6 @@ app.get("/api/heatmap/:month", (req, res) => {
     res.json(results);
   });
 });
-
 // for clicking map point to display species
 app.get("/api/species", (req, res) => {
   const { lat, lng, month } = req.query;
@@ -167,6 +165,37 @@ app.get("/api/bargraph", (req, res) => {
     } else {
       res.json(results);
     }
+  });
+});
+
+//API endpoint to get alpha per country for boxplot
+app.get("/api/alpha-boxplot", (req, res) => {
+  const query = `
+    SELECT c.name AS country_name, l.alpha
+    FROM latlong_data l
+    JOIN countries c ON l.country_id = c.id
+    WHERE l.alpha IS NOT NULL;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching alpha diversity data:", err);
+      res.status(500).json({ error: "Database error" });
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+
+// GET country names
+app.get("/api/country-settings", (req, res) => {
+  db.query("SELECT name FROM countries ORDER BY name ASC", (err, results) => {
+    if (err) {
+      console.error("Error fetching countries:", err);
+      return res.status(500).json({ error: "Failed to fetch countries" });
+    }
+    res.json(results);
   });
 });
 

@@ -68,6 +68,51 @@ import "../leaflet-heat.js";
           });
       };
     
+      const addLegend = (map) => {
+        const legend = L.control({ position: 'bottomright' });
+      
+        legend.onAdd = function () {
+          const div = L.DomUtil.create('div', 'info legend');
+          const colors = ['blue', 'cyan', 'lime', 'yellow', 'red'];
+          
+          div.innerHTML = `
+            <div style="
+              padding: 8px;
+              background: white;
+              border-radius: 5px;
+              box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+            ">
+              <h4 style="margin:0 0 8px 0; font-size:14px;">
+                Species Density
+              </h4>
+              
+              <!-- Full color gradient -->
+              <div style="
+                height: 12px;
+                width: 100%;
+                background: linear-gradient(to right, ${colors.join(',')});
+                margin-bottom: 5px;
+                border-radius: 2px;
+              "></div>
+              
+              <!-- Simple endpoints -->
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                font-size: 11px;
+              ">
+                <span>Low</span>
+                <span>High</span>
+              </div>
+            </div>
+          `;
+      
+          return div;
+        };
+      
+        legend.addTo(map);
+      };
+
       useEffect(() => {
         if (heatmapData.length === 0) return;
     
@@ -97,7 +142,9 @@ import "../leaflet-heat.js";
         };
         
         // Add layer control (top-right corner)
-        L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);        
+        L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);  
+        
+        
 
         map.on('click', async function (e) {
           const clickedLat = e.latlng.lat.toFixed(6);
@@ -150,7 +197,7 @@ import "../leaflet-heat.js";
             0.75: 'yellow',
             1.0: 'red'
           }
-        }).addTo(map);
+        }).addTo(map); addLegend(map);
     
         return () => map.remove();
       }, [heatmapData]);

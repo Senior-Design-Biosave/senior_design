@@ -6,6 +6,7 @@ import Bargraph from "./Bargraph";
 import Piechart from "./Piechart";
 import Heatmap from "./Heatmap2";
 import Settings from "./Settings"
+import AlphaBoxPlot from "./AlphaBoxPlot";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard"); // Track selected tab
@@ -23,6 +24,7 @@ const Dashboard = () => {
             <>
               <h3>Diversity Metrics</h3>
               <Heatmap />
+              <AlphaBoxPlot />
               <PopulousAnimals />
             </>
           )}
