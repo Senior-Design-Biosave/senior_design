@@ -11,8 +11,8 @@ app.use(cors()); // Enable CORS to allow React to fetch data
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "root",
-  database: "SeniorDesign",
+  password: "NutellaBiscuit5!",
+  database: "senior_design",
 });
 
 db.connect((err) => {
@@ -90,49 +90,53 @@ app.get("/api/heatmap/:month", (req, res) => {
     res.json(results);
   });
 });
-// for clicking map point to display species
+// for clicking map point to display species within radius (50km)
 app.get("/api/species", (req, res) => {
   const { lat, lng, month } = req.query;
   const latitude = parseFloat(lat);
   const longitude = parseFloat(lng);
   const monthStr = month.toUpperCase();
+  const radiusKm = 50;
 
-  const latMin = latitude - 0.0005;
-  const latMax = latitude + 0.0005;
-  const lonMin = longitude - 0.0005;
-  const lonMax = longitude + 0.0005;
-
-  const latlongSql = `
-    SELECT id FROM latlong_data
-    WHERE latitude BETWEEN ? AND ?
-    AND longitude BETWEEN ? AND ?
-    AND month = ?
-    LIMIT 1
+  const sql = `
+    SELECT ld.id, ld.latitude, ld.longitude
+    FROM latlong_data ld
+    WHERE month = ?
+    AND (
+      6371 * acos(
+        cos(radians(?)) * cos(radians(ld.latitude)) *
+        cos(radians(ld.longitude) - radians(?)) +
+        sin(radians(?)) * sin(radians(ld.latitude))
+      )
+    ) < ?
   `;
 
-  db.query(latlongSql, [latMin, latMax, lonMin, lonMax, monthStr], (err, result) => {
-    if (err || result.length === 0) {
+  db.query(sql, [monthStr, latitude, longitude, latitude, radiusKm], (err, results) => {
+    if (err || results.length === 0) {
       return res.json([]);
     }
 
-    const latlongId = result[0].id;
+    const latlongIds = results.map(r => r.id);
+    if (latlongIds.length === 0) return res.json([]);
 
     const speciesSql = `
-      SELECT species_name, abundance
+      SELECT species_name, SUM(abundance) as abundance
       FROM species_location
-      WHERE latlong_id = ?
+      WHERE latlong_id IN (?)
+      GROUP BY species_name
     `;
 
-    db.query(speciesSql, [latlongId], (err, results) => {
-      if (err) {
-        console.error(err);
+    db.query(speciesSql, [latlongIds], (err2, speciesResults) => {
+      if (err2) {
+        console.error(err2);
         return res.status(500).json({ error: "Failed to fetch species data" });
       }
 
-      res.json(results);
+      res.json(speciesResults);
     });
   });
 });
+
 
 // API endpoint to get species abundance per country for pie chart
 app.get("/api/piechart", (req, res) => {

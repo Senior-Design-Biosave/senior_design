@@ -10,6 +10,7 @@ const Heatmap = () => {
   const [valueType, setValueType] = useState("alpha");
   const [dataType, setDataType] = useState("actual");
   const [isLoading, setIsLoading] = useState(false);
+  const [radiusCircle, setRadiusCircle] = useState(null);
 
   const months = [
     "ALL", "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -139,10 +140,24 @@ const Heatmap = () => {
 
     L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);
 
-    // 🔧 CHANGED: Augmented popup with species + model prediction
     map.on('click', async function (e) {
       const clickedLat = e.latlng.lat.toFixed(6);
       const clickedLng = e.latlng.lng.toFixed(6);
+
+      const latlng = e.latlng;
+
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+      }
+
+      const newCircle = L.circle(latlng, {
+        radius: 50000,
+        color: 'blue',
+        fillColor: '#add8e6',
+        fillOpacity: 0.2,
+      }).addTo(map);
+
+      setRadiusCircle(newCircle);
 
       let popupContent = `<div style="font-size: 14px;">`;
 
@@ -167,27 +182,30 @@ const Heatmap = () => {
         popupContent += `<span style="color: red;">Error fetching species data.</span>`;
       }
 
-      try {
-        const predictResponse = await fetch("http://localhost:5000/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat: clickedLat, lng: clickedLng })
-        });
+      // Only fetch and show prediction if "predicted" is selected
+      if (dataType === "predicted") {
+        try {
+          const predictResponse = await fetch("http://localhost:5000/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat: clickedLat, lng: clickedLng })
+          });
 
-        const prediction = await predictResponse.json();
+          const prediction = await predictResponse.json();
 
-        if (prediction.error) {
-          popupContent += `<br><br><span style="color: red;">Model Error: ${prediction.error}</span>`;
-        } else {
-          popupContent += `
-            <br><br><strong>Model Prediction:</strong><br>
-            Alpha: ${prediction.alpha.toFixed(3)}<br>
-            Beta: ${prediction.beta.toFixed(3)}
-          `;
+          if (prediction.error) {
+            popupContent += `<br><br><span style="color: red;">Model Error: ${prediction.error}</span>`;
+          } else {
+            popupContent += `
+              <br><br><strong>Model Prediction:</strong><br>
+              Alpha: ${prediction.alpha.toFixed(3)}<br>
+              Beta: ${prediction.beta.toFixed(3)}
+            `;
+          }
+        } catch (err) {
+          console.error(err);
+          popupContent += `<br><br><span style="color: red;">Error fetching model prediction.</span>`;
         }
-      } catch (err) {
-        console.error(err);
-        popupContent += `<br><br><span style="color: red;">Error fetching model prediction.</span>`;
       }
 
       popupContent += `</div>`;
@@ -226,7 +244,7 @@ const Heatmap = () => {
     addLegend(map, isPredicted);
 
     return () => map.remove();
-  }, [heatmapData, dataType]); // 🔧 CHANGED
+  }, [heatmapData, dataType]);
 
   return (
     <div style={{ position: "relative", height: "100vh", marginBottom: "-3rem" }}>
@@ -246,6 +264,7 @@ const Heatmap = () => {
           <option value="beta">Beta Diversity</option>
         </select>
       </div>
+
       <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1000 }}>
         <select
           value={selectedMonth}
