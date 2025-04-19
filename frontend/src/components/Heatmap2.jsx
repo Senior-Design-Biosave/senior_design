@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../leaflet-heat.js";
+import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
+import 'leaflet-geosearch/dist/geosearch.css';
 
 const Heatmap = () => {
   const [heatmapData, setHeatmapData] = useState([]);
@@ -122,6 +124,21 @@ const Heatmap = () => {
       zoom: 5,
       zoomControl: false,
     });
+
+    // Add Search Control (GeoSearch)
+const provider = new OpenStreetMapProvider();
+const searchControl = new GeoSearchControl({
+  provider: provider,
+  style: 'bar',
+  autoClose: true,
+  showMarker: true,
+  showPopup: false,
+  retainZoomLevel: false,
+  animateZoom: true,
+  keepResult: true,
+  searchLabel: 'Search for location...'
+});
+map.addControl(searchControl);
 
     const satellite = L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
       attribution: "Google Satellite",
@@ -243,7 +260,11 @@ const Heatmap = () => {
 
     addLegend(map, isPredicted);
 
-    return () => map.remove();
+    return () => {
+      map.remove();
+      map.removeControl(searchControl);
+    };
+    
   }, [heatmapData, dataType]);
 
   return (
