@@ -1,4 +1,5 @@
 import torch
+import joblib
 from model.model_def import FusionModel
 
 def load_model(model_path=r'C:\Users\boxwa\Senior_GUI\senior_design\model\best_model.pt'):
@@ -35,8 +36,19 @@ def predict(image_tensor, tabular_tensor):
     Returns:
         (alpha, beta): tuple of predicted values
     """
+    print("image_tensor shape:", image_tensor.shape)
+    print("tabular_tensor shape:", tabular_tensor.shape)
+
     model = get_model()
     with torch.no_grad():
         output = model(image_tensor, tabular_tensor)
-    alpha, beta = output[0].tolist()
+    
+    # Convert to numpy
+    scaled_pred = output.cpu().numpy()  # shape [1, 2]
+
+    # Load target scaler
+    target_scaler = joblib.load("scalers/target_scaler.pkl")
+    true_pred = target_scaler.inverse_transform(scaled_pred)[0]  # shape: [2]
+
+    alpha, beta = int(true_pred[0])/1000, float(true_pred[1])/1000.0
     return alpha, beta

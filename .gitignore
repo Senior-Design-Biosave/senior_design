@@ -24,3 +24,16 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# .gitignore
+node_modules/
+.env
+__pycache__/
+*.pyc
+*.pkl
+*.pt
+.DS_Store
+*.log
+.vscode/
+.idea/
+frontend/build/

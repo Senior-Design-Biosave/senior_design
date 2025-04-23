@@ -1,15 +1,18 @@
-// ... (imports unchanged)
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../leaflet-heat.js";
 
 const Heatmap = () => {
-  const [heatmapData, setHeatmapData] = useState([]);
+  const [heatmapData, setHeatmapData] = useState({ actual: [], predicted: [] });
   const [selectedMonth, setSelectedMonth] = useState("ALL");
   const [valueType, setValueType] = useState("alpha");
-  const [dataType, setDataType] = useState("actual");
+  const [dataTypes, setDataTypes] = useState(["actual"]); // Now an array to support multiple selections
   const [isLoading, setIsLoading] = useState(false);
+
+  const mapRef = useRef(null);
+  const heatLayerRef = useRef({ actual: null, predicted: null });
+  const legendRef = useRef(null);
 
   const months = [
     "ALL", "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -17,8 +20,12 @@ const Heatmap = () => {
   ];
 
   useEffect(() => {
+    if (!dataTypes.includes("actual")) {
+      setHeatmapData(prev => ({ ...prev, actual: [] }));
+      return;
+    }
     fetchHeatmapData(selectedMonth);
-  }, [selectedMonth, valueType, dataType]);
+  }, [selectedMonth, valueType, dataTypes]);
 
   const fetchHeatmapData = async (month) => {
     setIsLoading(true);
@@ -31,7 +38,7 @@ const Heatmap = () => {
       .then((data) => {
         if (data.length === 0) {
           alert(`No data available for ${valueType.toUpperCase()} in ${month}`);
-          setHeatmapData([]);
+          setHeatmapData(prev => ({ ...prev, actual: [] }));
           setIsLoading(false);
           return;
         }
@@ -40,7 +47,7 @@ const Heatmap = () => {
         const validValues = values.filter(v => v !== null && !isNaN(v));
         if (validValues.length === 0) {
           alert(`No valid ${valueType.toUpperCase()} data found.`);
-          setHeatmapData([]);
+          setHeatmapData(prev => ({ ...prev, actual: [] }));
           setIsLoading(false);
           return;
         }
@@ -59,7 +66,7 @@ const Heatmap = () => {
             return [item.latitude, item.longitude, norm];
           });
 
-        setHeatmapData(formattedData);
+        setHeatmapData(prev => ({ ...prev, actual: formattedData }));
         setIsLoading(false);
       })
       .catch((error) => {
@@ -68,54 +75,64 @@ const Heatmap = () => {
       });
   };
 
-  const addLegend = (map, isPredicted = false) => {
+  const addLegend = (map) => {
+    if (legendRef.current) {
+      try {
+        map.removeControl(legendRef.current);
+      } catch (e) {
+        console.warn("Legend already removed.");
+      }
+      legendRef.current = null;
+    }
+
     const legend = L.control({ position: 'bottomright' });
 
     legend.onAdd = function () {
       const div = L.DomUtil.create('div', 'info legend');
-      const colors = isPredicted
-        ? ['purple', '#952ea0', '#d44292', '#f66d7a', 'yellow']
-        : ['blue', 'cyan', 'lime', 'yellow', 'red'];
-
-      div.innerHTML = `
-        <div style="
-          padding: 8px;
-          background: white;
-          border-radius: 5px;
-          box-shadow: 0 1px 5px rgba(0,0,0,0.2);
-        ">
-          <h4 style="margin:0 0 8px 0; font-size:14px;">
-            ${isPredicted ? 'Predicted' : 'Actual'} ${valueType.toUpperCase()} Diversity
-          </h4>
-
-          <div style="
-            height: 12px;
-            width: 100%;
-            background: linear-gradient(to right, ${colors.join(',')});
-            margin-bottom: 5px;
-            border-radius: 2px;
-          "></div>
-
-          <div style="
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-          ">
-            <span>Low</span>
-            <span>High</span>
+      
+      // Create legend content for each active data type
+      const legendContents = [];
+      
+      if (dataTypes.includes("actual")) {
+        legendContents.push(`
+          <div style="padding: 8px; background: white; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2); margin-bottom: 8px;">
+            <h4 style="margin:0 0 8px 0; font-size:14px;">Actual ${valueType.toUpperCase()} Diversity</h4>
+            <div style="height: 12px; width: 100%; background: linear-gradient(to right, blue, cyan, lime, yellow, red); margin-bottom: 5px; border-radius: 2px;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px;">
+              <span>Low</span><span>High</span>
+            </div>
           </div>
-        </div>
-      `;
+        `);
+      }
+      
+      if (dataTypes.includes("predicted")) {
+        legendContents.push(`
+          <div style="padding: 8px; background: white; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2);">
+            <h4 style="margin:0 0 8px 0; font-size:14px;">Predicted ${valueType.toUpperCase()} Diversity</h4>
+            <div style="height: 12px; width: 100%; background: linear-gradient(to right, purple, #952ea0, #d44292, #f66d7a, yellow); margin-bottom: 5px; border-radius: 2px;"></div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px;">
+              <span>Low</span><span>High</span>
+            </div>
+          </div>
+        `);
+      }
+
+      div.innerHTML = legendContents.join('');
 
       return div;
     };
 
     legend.addTo(map);
+    legendRef.current = legend;
   };
 
   useEffect(() => {
-    if (heatmapData.length === 0) return;
+    const map = mapRef.current;
+    if (!map) return;
+    addLegend(map);
+  }, [dataTypes, valueType]);
 
+  useEffect(() => {
     const map = L.map("heatmap", {
       center: [18.22525025, 42.4240741],
       zoom: 5,
@@ -139,94 +156,196 @@ const Heatmap = () => {
 
     L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);
 
-    // 🔧 CHANGED: Augmented popup with species + model prediction
-    map.on('click', async function (e) {
-      const clickedLat = e.latlng.lat.toFixed(6);
-      const clickedLng = e.latlng.lng.toFixed(6);
-
-      let popupContent = `<div style="font-size: 14px;">`;
-
-      try {
-        const speciesResponse = await fetch(`http://localhost:5000/api/species?lat=${clickedLat}&lng=${clickedLng}&month=${selectedMonth}`);
-        const speciesData = await speciesResponse.json();
-
-        if (speciesData.length > 0) {
-          popupContent += `<strong>Species Abundance:</strong><br>`;
-          popupContent += speciesData.map(s => `
-            <a href="https://www.google.com/search?q=${encodeURIComponent(`${s.species_name} genus`)}"
-              target="_blank"
-              style="color:#0077cc; text-decoration:none;">
-              ${s.species_name}
-            </a>: ${s.abundance}
-          `).join("<br>");
-        } else {
-          popupContent += `<span style="color: gray;">No species data found here.</span>`;
-        }
-      } catch (err) {
-        console.error(err);
-        popupContent += `<span style="color: red;">Error fetching species data.</span>`;
-      }
-
-      try {
-        const predictResponse = await fetch("http://localhost:5000/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat: clickedLat, lng: clickedLng })
-        });
-
-        const prediction = await predictResponse.json();
-
-        if (prediction.error) {
-          popupContent += `<br><br><span style="color: red;">Model Error: ${prediction.error}</span>`;
-        } else {
-          popupContent += `
-            <br><br><strong>Model Prediction:</strong><br>
-            Alpha: ${prediction.alpha.toFixed(3)}<br>
-            Beta: ${prediction.beta.toFixed(3)}
-          `;
-        }
-      } catch (err) {
-        console.error(err);
-        popupContent += `<br><br><span style="color: red;">Error fetching model prediction.</span>`;
-      }
-
-      popupContent += `</div>`;
-
-      L.popup()
-        .setLatLng([clickedLat, clickedLng])
-        .setContent(popupContent)
-        .openOn(map);
-    });
-
-    const isPredicted = dataType === "predicted";
-
-    L.heatLayer(heatmapData, {
-      radius: 8,
-      blur: 10,
-      maxZoom: 12,
-      minOpacity: 0.5,
-      max: 1.0,
-      gradient: isPredicted
-        ? {
-            0.0: 'purple',
-            0.25: '#952ea0',
-            0.5: '#d44292',
-            0.75: '#f66d7a',
-            1.0: 'yellow'
-          }
-        : {
-            0.0: 'blue',
-            0.25: 'cyan',
-            0.5: 'lime',
-            0.75: 'yellow',
-            1.0: 'red'
-          }
-    }).addTo(map);
-
-    addLegend(map, isPredicted);
+    mapRef.current = map;
 
     return () => map.remove();
-  }, [heatmapData, dataType]); // 🔧 CHANGED
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear all heat layers
+    Object.values(heatLayerRef.current).forEach(layer => {
+      if (layer && map.hasLayer(layer)) {
+        map.removeLayer(layer);
+      }
+    });
+
+    // Add heat layers for active data types
+    if (dataTypes.includes("actual") && heatmapData.actual.length > 0) {
+      const heatLayer = L.heatLayer(heatmapData.actual, {
+        radius: 8,
+        blur: 10,
+        maxZoom: 12,
+        minOpacity: 0.5,
+        max: 1.0,
+        gradient: {
+          0.0: 'blue',
+          0.25: 'cyan',
+          0.5: 'lime',
+          0.75: 'yellow',
+          1.0: 'red'
+        }
+      }).addTo(map);
+      heatLayerRef.current.actual = heatLayer;
+    }
+
+    if (dataTypes.includes("predicted") && heatmapData.predicted.length > 0) {
+      const heatLayer = L.heatLayer(heatmapData.predicted, {
+        radius: 8,
+        blur: 10,
+        maxZoom: 12,
+        minOpacity: 0.5,
+        max: 1.0,
+        gradient: {
+          0.0: 'purple',
+          0.25: '#952ea0',
+          0.5: '#d44292',
+          0.75: '#f66d7a',
+          1.0: 'yellow'
+        }
+      }).addTo(map);
+      heatLayerRef.current.predicted = heatLayer;
+    }
+  }, [heatmapData, dataTypes, valueType]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const handleMapClick = async (e) => {
+      e.originalEvent?.preventDefault();
+      e.originalEvent?.stopPropagation();
+    
+      const clickedLat = parseFloat(e.latlng.lat.toFixed(6));
+      const clickedLng = parseFloat(e.latlng.lng.toFixed(6));
+    
+      map.closePopup();
+    
+      // Handle predicted data click first if both are enabled
+      if (dataTypes.includes("predicted")) {
+        try {
+          const predictResponse = await fetch("http://localhost:5050/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat: clickedLat, lng: clickedLng })
+          });
+    
+          if (!predictResponse.ok) {
+            const errText = await predictResponse.text();
+            throw new Error(`Server returned ${predictResponse.status}: ${errText}`);
+          }
+    
+          const result = await predictResponse.json();
+          const value = result[valueType];
+    
+          if (typeof value === "number") {
+            const norm = Math.max(0, Math.min((value - 0.0) / (1.0 - 0.0), 1.0));
+    
+            setHeatmapData(prev => {
+              const updated = {
+                ...prev,
+                predicted: [...prev.predicted, [clickedLat, clickedLng, norm]]
+              };
+            
+              const map = mapRef.current;
+            
+              if (map && dataTypes.includes("predicted")) {
+                // Remove old predicted heat layer if it exists
+                if (heatLayerRef.current.predicted && map.hasLayer(heatLayerRef.current.predicted)) {
+                  map.removeLayer(heatLayerRef.current.predicted);
+                }
+            
+                // Create a new heat layer with the updated points
+                const newLayer = L.heatLayer(updated.predicted, {
+                  radius: 8,
+                  blur: 10,
+                  maxZoom: 12,
+                  minOpacity: 0.5,
+                  max: 1.0,
+                  gradient: {
+                    0.0: 'purple',
+                    0.25: '#952ea0',
+                    0.5: '#d44292',
+                    0.75: '#f66d7a',
+                    1.0: 'yellow'
+                  }
+                }).addTo(map);
+            
+                heatLayerRef.current.predicted = newLayer;
+              }
+            
+              return updated;
+            });
+            
+            const popupContent = 
+              `<div style="font-size: 14px;">
+                <strong style="color: #0077cc;">Predicted Diversity</strong><br>
+                <b>Alpha</b>: ${result.alpha.toFixed(3)}<br>
+                <b>Beta</b>: ${result.beta.toFixed(3)}
+              </div>`;
+    
+            L.popup({ autoClose: false, closeOnClick: true })
+              .setLatLng([clickedLat, clickedLng])
+              .setContent(popupContent)
+              .openOn(map);
+    
+            return; // Exit after showing predicted popup
+          } else {
+            throw new Error("Prediction returned invalid value");
+          }
+        } catch (error) {
+          console.error("Error fetching prediction:", error);
+          // If prediction fails, fall through to show actual data popup if enabled
+        }
+      }
+    
+      // Only show actual data popup if predicted is not enabled or failed
+      if (dataTypes.includes("actual")) {
+        let popupContent = `<div style="font-size: 14px;"><strong>Species Observed</strong><br>`;
+        try {
+          const response = await fetch(`http://localhost:5000/api/species?lat=${clickedLat}&lng=${clickedLng}&month=${selectedMonth}`);
+          const speciesData = await response.json();
+    
+          if (speciesData.length > 0) {
+            popupContent += speciesData.map(s => 
+              `<a href="https://www.google.com/search?q=${encodeURIComponent(`${s.species_name} genus`)}"
+                target="_blank"
+                style="color:#0077cc; text-decoration:none;">
+                ${s.species_name}
+              </a>: ${s.abundance}`
+            ).join("<br>");
+          } else {
+            popupContent += `<span style="color: gray;">No species data found here.</span>`;
+          }
+        } catch (err) {
+          console.error(err);
+          popupContent += `<span style="color: red;">Error fetching species data.</span>`;
+        }
+    
+        L.popup({ autoClose: false, closeOnClick: true })
+          .setLatLng([clickedLat, clickedLng])
+          .setContent(popupContent + "</div>")
+          .openOn(map);
+      }
+    };
+
+    map.on("click", handleMapClick);
+    return () => map.off("click", handleMapClick);
+  }, [dataTypes, selectedMonth, valueType]);
+
+  const toggleDataType = (type) => {
+    setDataTypes(prev => {
+      if (prev.includes(type)) {
+        if (prev.length > 1) {
+          return prev.filter(t => t !== type);
+        }
+        return prev; // Don't allow empty selection
+      }
+      return [...prev, type];
+    });
+  };
 
   return (
     <div style={{ position: "relative", height: "100vh", marginBottom: "-3rem" }}>
@@ -267,20 +386,34 @@ const Heatmap = () => {
       </div>
 
       <div style={{ position: "absolute", top: "10px", left: "285px", zIndex: 1000 }}>
-        <select
-          value={dataType}
-          onChange={(e) => setDataType(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-          }}
-        >
-          <option value="actual">Actual Values</option>
-          <option value="predicted">Predicted Values</option>
-        </select>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => toggleDataType("actual")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              backgroundColor: dataTypes.includes("actual") ? "#e6f7ff" : "white",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              cursor: "pointer"
+            }}
+          >
+            Actual
+          </button>
+          <button
+            onClick={() => toggleDataType("predicted")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              backgroundColor: dataTypes.includes("predicted") ? "#f9f0ff" : "white",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+              cursor: "pointer"
+            }}
+          >
+            Predicted
+          </button>
+        </div>
       </div>
 
       {isLoading && (
