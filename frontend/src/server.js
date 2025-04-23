@@ -90,6 +90,7 @@ app.get("/api/heatmap/:month", (req, res) => {
     res.json(results);
   });
 });
+
 // for clicking map point to display species within radius (50km)
 app.get("/api/species", (req, res) => {
   const { lat, lng, month } = req.query;
@@ -134,6 +135,42 @@ app.get("/api/species", (req, res) => {
 
       res.json(speciesResults);
     });
+  });
+});
+
+// search by species
+app.get('/api/species/search', (req, res) => {
+  const speciesList = req.query.species
+    ?.split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (!speciesList || speciesList.length === 0) {
+    return res.status(400).json({ error: 'No species provided.' });
+  }
+
+  const placeholders = speciesList.map(() => '?').join(',');
+  const sql = `
+    SELECT 
+      s.species_name,
+      l.latitude,
+      l.longitude
+    FROM species_location s
+    JOIN latlong_data l ON s.latlong_id = l.id
+    WHERE s.species_name IN (${placeholders})
+  `;
+
+  db.query(sql, speciesList, (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error.' });
+    }
+
+    if (results.length === 0) {
+      return res.status(200).json([]); // No match
+    }
+
+    res.status(200).json(results);
   });
 });
 

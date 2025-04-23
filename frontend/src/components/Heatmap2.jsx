@@ -13,6 +13,8 @@ const Heatmap = () => {
   const [dataType, setDataType] = useState("actual");
   const [isLoading, setIsLoading] = useState(false);
   const [radiusCircle, setRadiusCircle] = useState(null);
+  const [speciesName, setSpeciesName] = useState("");
+  const [speciesMarkers, setSpeciesMarkers] = useState([]);
 
   const months = [
     "ALL", "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -32,15 +34,9 @@ const Heatmap = () => {
     fetch(`http://localhost:5000${endpoint}`)
       .then((response) => response.json())
       .then((data) => {
-        if (data.length === 0) {
-          alert(`No data available for ${valueType.toUpperCase()} in ${month}`);
-          setHeatmapData([]);
-          setIsLoading(false);
-          return;
-        }
-
         const values = data.map(item => item[valueType]);
         const validValues = values.filter(v => v !== null && !isNaN(v));
+
         if (validValues.length === 0) {
           alert(`No valid ${valueType.toUpperCase()} data found.`);
           setHeatmapData([]);
@@ -55,10 +51,7 @@ const Heatmap = () => {
           .filter(item => item[valueType] !== null)
           .map(item => {
             const val = item[valueType];
-            let norm = 0;
-            if (max !== min) {
-              norm = (val - min) / (max - min);
-            }
+            const norm = max !== min ? (val - min) / (max - min) : 0;
             return [item.latitude, item.longitude, norm];
           });
 
@@ -81,35 +74,16 @@ const Heatmap = () => {
         : ['blue', 'cyan', 'lime', 'yellow', 'red'];
 
       div.innerHTML = `
-        <div style="
-          padding: 8px;
-          background: white;
-          border-radius: 5px;
-          box-shadow: 0 1px 5px rgba(0,0,0,0.2);
-        ">
+        <div style="padding: 8px; background: white; border-radius: 5px; box-shadow: 0 1px 5px rgba(0,0,0,0.2);">
           <h4 style="margin:0 0 8px 0; font-size:14px;">
             ${isPredicted ? 'Predicted' : 'Actual'} ${valueType.toUpperCase()} Diversity
           </h4>
-
-          <div style="
-            height: 12px;
-            width: 100%;
-            background: linear-gradient(to right, ${colors.join(',')});
-            margin-bottom: 5px;
-            border-radius: 2px;
-          "></div>
-
-          <div style="
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-          ">
-            <span>Low</span>
-            <span>High</span>
+          <div style="height: 12px; width: 100%; background: linear-gradient(to right, ${colors.join(',')}); margin-bottom: 5px; border-radius: 2px;"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>Low</span><span>High</span>
           </div>
         </div>
       `;
-
       return div;
     };
 
@@ -125,47 +99,36 @@ const Heatmap = () => {
       zoomControl: false,
     });
 
-    // Add Search Control (GeoSearch)
-const provider = new OpenStreetMapProvider();
-const searchControl = new GeoSearchControl({
-  provider: provider,
-  style: 'bar',
-  autoClose: true,
-  showMarker: true,
-  showPopup: false,
-  retainZoomLevel: false,
-  animateZoom: true,
-  keepResult: true,
-  searchLabel: 'Search for location...'
-});
-map.addControl(searchControl);
+    const provider = new OpenStreetMapProvider();
+    // const searchControl = new GeoSearchControl({
+    //   provider: provider,
+    //   style: 'bar',
+    //   autoClose: true,
+    //   showMarker: true,
+    //   showPopup: false,
+    //   retainZoomLevel: false,
+    //   animateZoom: true,
+    //   keepResult: true,
+    //   searchLabel: 'Search for location...'
+    // });
+    // map.addControl(searchControl);
 
     const satellite = L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
       attribution: "Google Satellite",
     });
-
     const terrain = L.tileLayer("https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", {
       attribution: "Google Terrain",
     });
 
     satellite.addTo(map);
-
-    const baseMaps = {
-      "Terrain": terrain,
-      "Satellite": satellite,
-    };
-
-    L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);
+    L.control.layers({ Terrain: terrain, Satellite: satellite }, null, { position: "topright", collapsed: false }).addTo(map);
 
     map.on('click', async function (e) {
       const clickedLat = e.latlng.lat.toFixed(6);
       const clickedLng = e.latlng.lng.toFixed(6);
-
       const latlng = e.latlng;
 
-      if (radiusCircle) {
-        map.removeLayer(radiusCircle);
-      }
+      if (radiusCircle) map.removeLayer(radiusCircle);
 
       const newCircle = L.circle(latlng, {
         radius: 50000,
@@ -173,7 +136,6 @@ map.addControl(searchControl);
         fillColor: '#add8e6',
         fillOpacity: 0.2,
       }).addTo(map);
-
       setRadiusCircle(newCircle);
 
       let popupContent = `<div style="font-size: 14px;">`;
@@ -199,7 +161,6 @@ map.addControl(searchControl);
         popupContent += `<span style="color: red;">Error fetching species data.</span>`;
       }
 
-      // Only fetch and show prediction if "predicted" is selected
       if (dataType === "predicted") {
         try {
           const predictResponse = await fetch("http://localhost:5000/predict", {
@@ -209,15 +170,14 @@ map.addControl(searchControl);
           });
 
           const prediction = await predictResponse.json();
-
-          if (prediction.error) {
-            popupContent += `<br><br><span style="color: red;">Model Error: ${prediction.error}</span>`;
-          } else {
+          if (!prediction.error) {
             popupContent += `
               <br><br><strong>Model Prediction:</strong><br>
               Alpha: ${prediction.alpha.toFixed(3)}<br>
               Beta: ${prediction.beta.toFixed(3)}
             `;
+          } else {
+            popupContent += `<br><br><span style="color: red;">Model Error: ${prediction.error}</span>`;
           }
         } catch (err) {
           console.error(err);
@@ -226,11 +186,7 @@ map.addControl(searchControl);
       }
 
       popupContent += `</div>`;
-
-      L.popup()
-        .setLatLng([clickedLat, clickedLng])
-        .setContent(popupContent)
-        .openOn(map);
+      L.popup().setLatLng([clickedLat, clickedLng]).setContent(popupContent).openOn(map);
     });
 
     const isPredicted = dataType === "predicted";
@@ -242,85 +198,78 @@ map.addControl(searchControl);
       minOpacity: 0.5,
       max: 1.0,
       gradient: isPredicted
-        ? {
-            0.0: 'purple',
-            0.25: '#952ea0',
-            0.5: '#d44292',
-            0.75: '#f66d7a',
-            1.0: 'yellow'
-          }
-        : {
-            0.0: 'blue',
-            0.25: 'cyan',
-            0.5: 'lime',
-            0.75: 'yellow',
-            1.0: 'red'
-          }
+        ? { 0.0: 'purple', 0.25: '#952ea0', 0.5: '#d44292', 0.75: '#f66d7a', 1.0: 'yellow' }
+        : { 0.0: 'blue', 0.25: 'cyan', 0.5: 'lime', 0.75: 'yellow', 1.0: 'red' }
     }).addTo(map);
 
     addLegend(map, isPredicted);
 
+    // Add species markers if any
+    speciesMarkers.forEach(({ lat, lng }) => {
+      L.marker([lat, lng], {
+        icon: L.icon({
+          iconUrl: "https://cdn-icons-png.flaticon.com/512/616/616408.png",
+          iconSize: [20, 20],
+        }),
+      }).addTo(map);
+    });
+
     return () => {
       map.remove();
-      map.removeControl(searchControl);
+      //map.removeControl(searchControl);
     };
-    
-  }, [heatmapData, dataType]);
+  }, [heatmapData, dataType, speciesMarkers]);
+
+  const handleSpeciesSearch = async (e) => {
+    e.preventDefault();
+    if (!speciesName.trim()) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/species/search?species_name=${encodeURIComponent(speciesName)}`);
+      const data = await response.json();
+
+      if (data.length === 0) {
+        alert("No locations found for this species.");
+        return;
+      }
+
+      const locations = data.map(loc => ({ lat: loc.latitude, lng: loc.longitude }));
+      setSpeciesMarkers(locations);
+    } catch (error) {
+      console.error("Error fetching species locations:", error);
+    }
+  };
 
   return (
     <div style={{ position: "relative", height: "100vh", marginBottom: "-3rem" }}>
-      <div style={{ position: "absolute", top: "10px", left: "135px", zIndex: 1000 }}>
-        <select
-          value={valueType}
-          onChange={(e) => setValueType(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-          }}
-        >
+      {/* UI Controls */}
+      <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1000, display: "flex", gap: "10px" }}>
+        <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+          {months.map(month => <option key={month} value={month}>{month === "ALL" ? "All Months" : month}</option>)}
+        </select>
+
+        <select value={valueType} onChange={(e) => setValueType(e.target.value)}>
           <option value="alpha">Alpha Diversity</option>
           <option value="beta">Beta Diversity</option>
         </select>
-      </div>
 
-      <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1000 }}>
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-          }}
-        >
-          {months.map(month => (
-            <option key={month} value={month}>
-              {month === "ALL" ? "All Months" : month}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ position: "absolute", top: "10px", left: "285px", zIndex: 1000 }}>
-        <select
-          value={dataType}
-          onChange={(e) => setDataType(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-          }}
-        >
+        <select value={dataType} onChange={(e) => setDataType(e.target.value)}>
           <option value="actual">Actual Values</option>
           <option value="predicted">Predicted Values</option>
         </select>
+
+        <form onSubmit={handleSpeciesSearch} style={{ display: "flex", gap: "5px" }}>
+          <input
+            type="text"
+            placeholder="Search species..."
+            value={speciesName}
+            onChange={(e) => setSpeciesName(e.target.value)}
+            style={{ padding: "6px 10px", borderRadius: "4px", border: "1px solid #ccc" }}
+          />
+          <button type="submit" style={{ padding: "6px 10px", borderRadius: "4px", backgroundColor: "#4CAF50", color: "white", border: "none" }}>
+            Search
+          </button>
+        </form>
       </div>
 
       {isLoading && (
@@ -339,15 +288,7 @@ map.addControl(searchControl);
         </div>
       )}
 
-      <div
-        id="heatmap"
-        style={{
-          height: "90%",
-          borderRadius: "10px",
-          overflow: "hidden",
-          boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-        }}
-      ></div>
+      <div id="heatmap" style={{ height: "90%", borderRadius: "10px", overflow: "hidden", boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)" }}></div>
     </div>
   );
 };
