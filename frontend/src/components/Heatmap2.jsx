@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../leaflet-heat.js";
+import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
+import 'leaflet-geosearch/dist/geosearch.css';
 
 const Heatmap = () => {
   const [heatmapData, setHeatmapData] = useState({ actual: [], predicted: [] });
@@ -9,6 +11,7 @@ const Heatmap = () => {
   const [valueType, setValueType] = useState("alpha");
   const [dataTypes, setDataTypes] = useState(["actual"]); // Now an array to support multiple selections
   const [isLoading, setIsLoading] = useState(false);
+  const [radiusCircle, setRadiusCircle] = useState(null);
 
   const mapRef = useRef(null);
   const heatLayerRef = useRef({ actual: null, predicted: null });
@@ -85,7 +88,7 @@ const Heatmap = () => {
       legendRef.current = null;
     }
 
-    const legend = L.control({ position: 'bottomright' });
+    const legend = L.control({ position: 'bottomleft' });
 
     legend.onAdd = function () {
       const div = L.DomUtil.create('div', 'info legend');
@@ -118,7 +121,6 @@ const Heatmap = () => {
       }
 
       div.innerHTML = legendContents.join('');
-
       return div;
     };
 
@@ -139,6 +141,39 @@ const Heatmap = () => {
       zoomControl: false,
     });
 
+    // Add Search Control (GeoSearch)
+    const provider = new OpenStreetMapProvider();
+    const searchControl = new GeoSearchControl({
+      provider: provider,
+      style: 'bar',
+      autoClose: true,
+      showMarker: true,
+      showPopup: false,
+      retainZoomLevel: false,
+      animateZoom: true,
+      keepResult: true,
+      searchLabel: 'Search for location...'
+    });
+    map.addControl(searchControl);
+
+    const style = document.createElement('style'); //search bar CSS
+    style.innerHTML = `
+      .leaflet-control-geosearch {
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        top: 10px !important;
+        width: 400px !important;
+        max-width: 80% !important;
+      }
+      .leaflet-control-geosearch form {
+        width: 100% !important;
+      }
+      .leaflet-control-geosearch input {
+        width: 100% !important;
+      }
+    `;
+    document.head.appendChild(style);
+
     const satellite = L.tileLayer("https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
       attribution: "Google Satellite",
     });
@@ -154,11 +189,15 @@ const Heatmap = () => {
       "Satellite": satellite,
     };
 
-    L.control.layers(baseMaps, null, { position: "topright", collapsed: false }).addTo(map);
+    L.control.layers(baseMaps, null, { position: "topleft", collapsed: false }).addTo(map);
 
     mapRef.current = map;
 
-    return () => map.remove();
+    return () => {
+      map.remove();
+      map.removeControl(searchControl);
+      document.head.removeChild(style);
+    };
   }, []);
 
   useEffect(() => {
@@ -220,6 +259,20 @@ const Heatmap = () => {
     
       const clickedLat = parseFloat(e.latlng.lat.toFixed(6));
       const clickedLng = parseFloat(e.latlng.lng.toFixed(6));
+    
+      // Clear previous radius circle if exists
+      if (radiusCircle) {
+        map.removeLayer(radiusCircle);
+      }
+    
+      // Add new radius circle
+      const newCircle = L.circle(e.latlng, {
+        radius: 50000,
+        color: 'blue',
+        fillColor: '#add8e6',
+        fillOpacity: 0.2,
+      }).addTo(map);
+      setRadiusCircle(newCircle);
     
       map.closePopup();
     
@@ -333,7 +386,7 @@ const Heatmap = () => {
 
     map.on("click", handleMapClick);
     return () => map.off("click", handleMapClick);
-  }, [dataTypes, selectedMonth, valueType]);
+  }, [dataTypes, selectedMonth, valueType, radiusCircle]);
 
   const toggleDataType = (type) => {
     setDataTypes(prev => {
@@ -348,44 +401,54 @@ const Heatmap = () => {
   };
 
   return (
-    <div style={{ position: "relative", height: "100vh", marginBottom: "-3rem" }}>
-      <div style={{ position: "absolute", top: "10px", left: "135px", zIndex: 1000 }}>
-        <select
-          value={valueType}
-          onChange={(e) => setValueType(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-          }}
-        >
-          <option value="alpha">Alpha Diversity</option>
-          <option value="beta">Beta Diversity</option>
-        </select>
-      </div>
-      <div style={{ position: "absolute", top: "10px", left: "10px", zIndex: 1000 }}>
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-          }}
-        >
-          {months.map(month => (
-            <option key={month} value={month}>
-              {month === "ALL" ? "All Months" : month}
-            </option>
-          ))}
-        </select>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      {/* Header section with all controls */}
+      <div style={{
+        padding: '10px',
+        backgroundColor: '#f5f5f5',
+        borderBottom: '1px solid #ddd',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '10px',
+        alignItems: 'center'
+      }}>
+        <div>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              backgroundColor: "white",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}
+          >
+            {months.map(month => (
+              <option key={month} value={month}>
+                {month === "ALL" ? "All Months" : month}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      <div style={{ position: "absolute", top: "10px", left: "285px", zIndex: 1000 }}>
+        <div>
+          <select
+            value={valueType}
+            onChange={(e) => setValueType(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid #ccc",
+              backgroundColor: "white",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}
+          >
+            <option value="alpha">Alpha Diversity</option>
+            <option value="beta">Beta Diversity</option>
+          </select>
+        </div>
+
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={() => toggleDataType("actual")}
@@ -416,31 +479,34 @@ const Heatmap = () => {
         </div>
       </div>
 
-      {isLoading && (
-        <div style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 1000,
-          backgroundColor: "rgba(255,255,255,0.8)",
-          padding: "10px 20px",
-          borderRadius: "4px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
-        }}>
-          Loading {selectedMonth === "ALL" ? "all data" : selectedMonth}...
-        </div>
-      )}
+      {/* Map container */}
+      <div style={{ flex: 1, position: 'relative' }}>
+        {isLoading && (
+          <div style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 1000,
+            backgroundColor: "rgba(255,255,255,0.8)",
+            padding: "10px 20px",
+            borderRadius: "4px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+          }}>
+            Loading {selectedMonth === "ALL" ? "all data" : selectedMonth}...
+          </div>
+        )}
 
-      <div
-        id="heatmap"
-        style={{
-          height: "90%",
-          borderRadius: "10px",
-          overflow: "hidden",
-          boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-        }}
-      ></div>
+        <div
+          id="heatmap"
+          style={{
+            height: "90%",
+            borderRadius: "10px",
+            overflow: "hidden",
+            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)"
+          }}
+        ></div>
+      </div>
     </div>
   );
 };
