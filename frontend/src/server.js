@@ -178,12 +178,13 @@ app.get("/api/bargraph", (req, res) => {
 });
 
 //API endpoint to get alpha per country for boxplot
-app.get("/api/alpha-boxplot", (req, res) => {
+/*app.get("/api/alpha-boxplot", (req, res) => {
   const query = `
     SELECT c.name AS country_name, l.alpha
     FROM latlong_data l
     JOIN countries c ON l.country_id = c.id
-    WHERE l.alpha IS NOT NULL;
+    WHERE l.alpha IS NOT NULL
+    ORDER BY c.name, l.alpha;
   `;
 
   db.query(query, (err, results) => {
@@ -191,11 +192,54 @@ app.get("/api/alpha-boxplot", (req, res) => {
       console.error("Error fetching alpha diversity data:", err);
       res.status(500).json({ error: "Database error" });
     } else {
-      res.json(results);
+      // Filter out any null or invalid alpha values
+      const validResults = results.filter(item => 
+        item.alpha !== null && !isNaN(item.alpha)
+      );
+      res.json(validResults);
+    }
+  });
+});*/
+// API endpoint to get alpha for a specific country
+app.get("/api/alpha-boxplot/:country", (req, res) => {
+  const country = req.params.country;
+  const query = `
+    SELECT c.name AS country_name, l.alpha
+    FROM latlong_data l
+    JOIN countries c ON l.country_id = c.id
+    WHERE l.alpha IS NOT NULL AND c.name = ?
+    ORDER BY l.alpha;
+  `;
+
+  db.query(query, [country], (err, results) => {
+    if (err) {
+      console.error("Error fetching alpha diversity data:", err);
+      res.status(500).json({ error: "Database error" });
+    } else {
+      const validResults = results.filter(item => 
+        item.alpha !== null && !isNaN(item.alpha)
+      );
+      res.json(validResults);
     }
   });
 });
-
+app.get("/api/countries", (req, res) => {
+  const query = `
+    SELECT DISTINCT c.name AS country_name
+    FROM latlong_data l
+    JOIN countries c ON l.country_id = c.id
+    WHERE l.alpha IS NOT NULL
+    ORDER BY c.name;
+  `;
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching countries:", err);
+      res.status(500).json({ error: "Database error" });
+    } else {
+      res.json(results.map(item => item.country_name));
+    }
+  });
+});
 
 // GET country names
 app.get("/api/country-settings", (req, res) => {

@@ -503,7 +503,8 @@ const Heatmap = () => {
             height: "90%",
             borderRadius: "10px",
             overflow: "hidden",
-            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)"
+            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
+            paddingRight: "20px"
           }}
         ></div>
       </div>
