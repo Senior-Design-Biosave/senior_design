@@ -147,7 +147,7 @@ const Heatmap = () => {
       provider: provider,
       style: 'bar',
       autoClose: true,
-      showMarker: true,
+      //showMarker: true,
       showPopup: false,
       retainZoomLevel: false,
       animateZoom: true,
